@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="60 seconds" debug="false">
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+    <jmxConfigurator/>
+    <!-- 日志文件输出目录（tomcat/logs） -->
+    <property name="LOG_HOME" value="${catalina.base}/logs" />
+    <!-- 日志文件名 -->
+    <property name="LOG_FILE" value="receipt-api" />
+    <!-- 日志格式 -->
+    <property name="FILE_LOG_PATTERN1" value='%date{ISO8601}^|%level^|trace.%X{X-B3-TraceId}|span.%X{X-B3-SpanId}|parent.%X{X-B3-ParentSpanId}-%t^|%c^|%M#%L^|[%X{req.requestURL}][%X{module}%X{traceKey}%X{input}%X{output}]=&gt;%msg%ex^|%replace(%X{fundCost}){"^$", -1}^|%replace(%X{fundApi}){"^$", -1}^|%tid%n' />
+
+    <!--    <property name="FILE_LOG_PATTERN1" value="%date{ISO8601}^|%level^|trace.%X{X-B3-TraceId}|span.%X{X-B3-SpanId}|parent.%X{X-B3-ParentSpanId}-%t^|%c^|%M#%L^|[%X{module}%X{traceKey}%X{input}%X{output}]=&gt;%msg%ex^|%tid%n" />-->
+
+
+    <!-- CONSOLE级别 -->
+    <appender name="CONSOLE"
+              class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${FILE_LOG_PATTERN1}</pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <!-- INFO级别 -->
+    <appender name="INFO_FILE"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${FILE_LOG_PATTERN1}</pattern>
+            </layout>
+        </encoder>
+        <file>${LOG_HOME}/${LOG_FILE}-info.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/${LOG_FILE}-info.log.%d{yyyy-MM-dd}</fileNamePattern>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ERROR级别 -->
+    <appender name="ERROR_FILE"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${FILE_LOG_PATTERN1}</pattern>
+            </layout>
+        </encoder>
+        <file>${LOG_HOME}/${LOG_FILE}-error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/${LOG_FILE}-error.log.%d{yyyy-MM-dd}</fileNamePattern>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 异步INFO级别 -->
+    <appender name="ASYNC_INFO_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>10000</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="INFO_FILE"/>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <!-- 异步ERROR级别 -->
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>5000</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="ERROR_FILE"/>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="ASYNC_INFO_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </root>
+    </springProfile>
+    <springProfile name="test">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <logger name="JamonPerformanceMonitor" level="INFO" />
+    <logger name="JamonRestApiPerformanceLogger" level="INFO" />
+
+
+    <!-- 新加 日志文件名SEC_OPERATION_LOG_FILE -->
+    <property name="SEC_OPERATION_LOG_FILE" value="sec-operation-log"/>
+
+    <!-- 新加 日志格式 -->
+    <property name="SEC_OPERATION_LOG_PATTERN" value='%msg%n'/>
+
+    <!-- 新加 配置安全日志输出至单独的日志文件中 -->
+    <appender name="SEC_OPERATION_INFO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_HOME}/${SEC_OPERATION_LOG_FILE}.log</File>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${SEC_OPERATION_LOG_PATTERN}</pattern>
+            </layout>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/${SEC_OPERATION_LOG_FILE}-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>10</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 新加 异步INFO级别 -->
+    <appender name="ASYNC_SEC_OPERATION_INFO_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>5000</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="SEC_OPERATION_INFO_FILE"/>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <!-- 新加 Logger -->
+    <Logger name="SecOperationLogger" additivity="false" level="INFO">
+        <appender-ref ref="ASYNC_SEC_OPERATION_INFO_FILE"/>
+    </Logger>
+</configuration>
