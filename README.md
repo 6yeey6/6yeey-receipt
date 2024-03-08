@@ -1,3 +1,3 @@
-# ibg_receipt
+# 6yeey6_receipt
 
-WE-TECH发票系统
+定制化发票系统
